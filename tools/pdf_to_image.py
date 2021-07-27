@@ -11,8 +11,10 @@ def convert(path):
 
 
 if __name__ == "__main__":
-	pdf_path = '/home/user/rz/data/registration/100本产证扫描件.pdf'
-	store_root = '/home/user/rz/data/registration/'
+	pdf_path = '/mnt/data/rz/data/register/org.pdf'
+	store_root = '/mnt/data/rz/data/register/images'
+	if not os.path.exists(store_root):
+		os.makedirs(store_root)
 	images = convert(pdf_path)
 	for img in tqdm(images):
 		t = str(int(time()*10000000))
