@@ -11,13 +11,13 @@ def convert(path):
 
 
 if __name__ == "__main__":
-	pdf_path = '/mnt/data/rz/data/register/org.pdf'
-	store_root = '/mnt/data/rz/data/register/images'
+	pdf_path = '/mnt/data/rz/data/register/20210731/20210731.pdf'
+	store_root = '/mnt/data/rz/data/register/20210731/images'
 	if not os.path.exists(store_root):
 		os.makedirs(store_root)
 	images = convert(pdf_path)
 	for img in tqdm(images):
 		t = str(int(time()*10000000))
-		name = '{}.jpg'.format(t)
+		name = '{}.png'.format(t)
 		store_path = os.path.join(store_root, name)
 		img.save(store_path)
