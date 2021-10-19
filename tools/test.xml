@@ -1,0 +1,45 @@
+<annotation>
+  <filename>1628230765513598.jpg</filename>
+  <folder>register/rec/idCard/images</folder>
+  <source>
+    <sourceImage />
+    <sourceAnnotation>Datumaro</sourceAnnotation>
+  </source>
+  <imagesize>
+    <nrows>29</nrows>
+    <ncols>55</ncols>
+  </imagesize>
+  <object>
+    <name>text</name>
+    <deleted>0</deleted>
+    <verified>0</verified>
+    <occluded>no</occluded>
+    <date />
+    <id>0</id>
+    <parts>
+      <hasparts />
+      <ispartof />
+    </parts>
+    <type>bounding_box</type>
+    <polygon>
+      <pt>
+        <x>0</x>
+        <y>0</y>
+      </pt>
+      <pt>
+        <x>55</x>
+        <y>0</y>
+      </pt>
+      <pt>
+        <x>55</x>
+        <y>29</y>
+      </pt>
+      <pt>
+        <x>0</x>
+        <y>29</y>
+      </pt>
+      <username />
+    </polygon>
+    <attributes>content=1519</attributes>
+  </object>
+</annotation>
