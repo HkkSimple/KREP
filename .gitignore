@@ -3,3 +3,7 @@ __pycache__/
 
 # some directory
 data/
+
+*.jpg
+*.png
+*.JPG
