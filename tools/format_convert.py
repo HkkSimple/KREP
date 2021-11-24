@@ -150,8 +150,9 @@ def voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',', filter_cl
             new_lines.append(new_line)
         txt_name = img_name.split('.')[0] + '.txt'
         txt_store_path = osp.join(txt_store_root, txt_name)
-        with open(txt_store_path, 'w') as f:
-            f.write('\n'.join(new_lines))
+        if len(new_lines) > 0:
+            with open(txt_store_path, 'w') as f:
+                f.write('\n'.join(new_lines))
 
 # 将voc格式的xml文件转成单个字段识别的格式
 # suffix: 在做line的filename那一栏时，是否需要添加前缀
@@ -195,24 +196,24 @@ def get_icdar_label():
 
 # 将voc格式的xml文件，转成yolov5的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
 def get_yolov5_label():
-    root = '/mnt/data/rz/data/register/origin/detect/exp/1_10_12/xml'
-    txt_store_root = '/mnt/data/rz/data/register/exp/det/20211014/company_label'
+    root = '/mnt/data/rz/data/UIDetect/sap/elements/'
+    txt_store_root = '/mnt/data/rz/data/UIDetect/sap/elements/labels'
     if not os.path.exists(txt_store_root):
         os.makedirs(txt_store_root)
-    class_names = ['number', 'owner', 'frame_number', 'registration_number',
-                   'manner', 'property', 'cover_code', 'cover_number', 'number_code', 
-                   'oil_type', 'vehicle_brand', 'domestic_import', 'factory', 'idCard']
-    # class_names = ['number', 'owner', 'idCard', 'frame_number', 'registration_number',
-    #                'manner', 'property', 'cover_code', 'cover_number']
+    # class_names = ['number', 'owner', 'frame_number', 'registration_number',
+    #                'manner', 'property', 'cover_code', 'cover_number', 'number_code', 
+    #                'oil_type', 'vehicle_brand', 'domestic_import', 'factory', 'idCard']
+    class_names = ['element']
     class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
-    for d in map(str, range(11, 12)):
-        xml_root = os.path.join(root, d)
-        voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',',
-                      filter_classes=['other'])
+    # for d in map(str, range(0, 1)):
+    # xml_root = os.path.join(root, d)
+    xml_root= os.path.join(root, 'xml')
+    voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',',
+                    filter_classes=['other'])
 
 # 将voc格式的xml文件，转成txt格式的识别格式去做文字识别:filename '\t' image_content(exp:1234)
 def get_rec_label():
-    root = '/mnt/data/rz/data/register/clean/rec/v1_4/vin_plate'
+    root = '/mnt/data/rz/data/register/clean/rec/v6/registration_number'
     error_path = os.path.join(root, 'error')
     img_root = os.path.join(root, 'images')
     xml_root = os.path.join(root, 'xml')
@@ -226,9 +227,10 @@ def get_rec_label():
     if not os.path.exists(error_path):
         os.makedirs(error_path)
 
-    # train_xml_paths = xml_paths
+    train_xml_paths = xml_paths
     train_xml_paths, valid_xml_paths = train_test_split(
         xml_paths, test_size=0.2, random_state=47)
+    train_xml_paths = xml_paths
     def store(paths, label_path, suffix, img_root, error_path, img_store_root):
         results = []
         for xmlp in tqdm(paths):

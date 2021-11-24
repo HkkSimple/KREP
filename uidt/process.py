@@ -131,12 +131,13 @@ for line in total:
 # 	shutil.copy(os.path.join('/mnt/data/rz/data/register/exp/det/20211014/labels',
 # 	            suf+'.txt'), '/mnt/data/rz/data/register/exp/det/20211014/val')
 
-# txt_path = glob('/mnt/data/rz/data/UIDetect/sap/elements/labels/train/*.txt')
-org_img_paths = '/mnt/data/rz/data/UIDetect/sap/elements/org/*.png'
-for imgp in glob(org_img_paths):
-	name = os.path.basename(imgp)
-	txtn = name.replace('png', 'txt')
-	print('txtn:', txtn)
-	txtp = os.path.join('/mnt/data/rz/data/UIDetect/sap/elements/labels', txtn)
-	shutil.copy(txtp, '/mnt/data/rz/data/UIDetect/sap/elements/val')
+txt_path = glob('/mnt/data/rz/data/UIDetect/sap/elements/labels/train/*.txt')
+org_img_root = '/mnt/data/rz/data/UIDetect/sap/elements/images'
+dst_img_root = '/mnt/data/rz/data/UIDetect/sap/elements/'
+for txtp in txt_path:
+	name = os.path.basename(txtp)
+	imgn = name.replace('txt', 'png')
+	org_imgp = os.path.join(org_img_root, imgn)
+	dst_imgp = '/mnt/data/rz/data/UIDetect/sap/elements/train'
+	shutil.move(org_imgp, dst_imgp)
 
