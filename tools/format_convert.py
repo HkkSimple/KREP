@@ -112,8 +112,7 @@ def voc_to_icdar(xml_root, txt_store_root, split_flag, filter_classes=[]):
         txt_store_path = os.path.join(txt_store_root, txt_name)
         with open(txt_store_path, 'w') as f:
             f.write('\n'.join(icdar_lines))
-
-
+        
 def voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',', filter_classes=[]):
     if not osp.exists(txt_store_root):
         os.makedirs(txt_store_root)
@@ -130,6 +129,8 @@ def voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',', filter_cl
             loc, cls = line[:8], line[-1]
             if cls in filter_classes:  # 过滤掉在filter classes中出现的类
                 continue
+            # if cls == 'icon':
+            #     cls = 'element'
             loc = list(map(int, loc))
             xmin, ymin, xmax, ymax = loc[0], loc[1], loc[4], loc[5]
             dw, dh = 1. / imgW, 1 / imgH
@@ -178,32 +179,59 @@ def voc_to_rec(xmlp, split_flag, suffix=''):
     else:
         return None, filename
 
+# cvat icdar format to common icdar format
+def load_cvat_icdar(txtp, content='content'):
+    results = []
+    with open(txtp) as f:
+        for line in f:
+            line = line.strip().split()
+            line = list(map(float, line))
+            line = [round(n) for n in line]
+            x1, y1, x2, y2 = line
+            line = [x1, y1, x2, y1, x2, y2, x1, y2]
+            line = [str(x) for x in line]
+            line.append('content')
+            line = ','.join(line)
+            results.append(line)
+    return results
 
 # =======================================================
 
 # 将voc格式的xml文件，转成icdar的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
 def get_icdar_label():
-    root = '/mnt/data/rz/data/register/v2/xml'
-    txt_store_root = '/mnt/data/rz/data/register/v2/icdar_format_label'
-    class_names = ['number', 'owner', 'frame_number', 'registration_number',
-                   'manner', 'property', 'cover_code', 'cover_number', 'idCard']
-    class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
+    root = '/mnt/data/rz/data/UIDetect/sap/elements/text_detect/icdar15_format'
+    txt_store_root = '/mnt/data/rz/data/UIDetect/sap/elements/text_detect/icdar15_format/annotations/test'
+    txt_paths = glob(osp.join(root, 'xml/*.txt'))
+    # class_names = ['number', 'owner', 'frame_number', 'registration_number',
+    #                'manner', 'property', 'cover_code', 'cover_number', 'idCard']
+    # class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
 
-    for d in ['8', '9']:
-        xml_root = os.path.join(root, d)
-        voc_to_icdar(xml_root, txt_store_root, split_flag=',',
-                     filter_classes=['other'])
+    # for d in ['8', '9']:
+    #     xml_root = os.path.join(root, d)
+    #     voc_to_icdar(xml_root, txt_store_root, split_flag=',',
+    #                  filter_classes=['other'])
+    if not osp.exists(txt_store_root):
+        os.makedirs(txt_store_root)
+    for txtp in txt_paths:
+        txtn = osp.basename(txtp)
+        txt_store_path = osp.join(txt_store_root, txtn)
+        result = load_cvat_icdar(txtp)
+        with open(txt_store_path, 'w') as f:
+            f.write('\n'.join(result))
+        
 
 # 将voc格式的xml文件，转成yolov5的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
 def get_yolov5_label():
-    root = '/mnt/data/rz/data/UIDetect/sap/elements/'
-    txt_store_root = '/mnt/data/rz/data/UIDetect/sap/elements/labels'
+    root = '/mnt/data/rz/data/UIDetect/sap/elements/text_detect/yolo_format'
+    txt_store_root = '/mnt/data/rz/data/UIDetect/sap/elements/text_detect/yolo_format/labels'
     if not os.path.exists(txt_store_root):
         os.makedirs(txt_store_root)
     # class_names = ['number', 'owner', 'frame_number', 'registration_number',
     #                'manner', 'property', 'cover_code', 'cover_number', 'number_code', 
     #                'oil_type', 'vehicle_brand', 'domestic_import', 'factory', 'idCard']
-    class_names = ['element']
+    class_names = ['element', 'txt', 'button', 'inputBox', 'checkBox', 'comboBox', 
+                   'minimize', 'maximize', 'close', 'slidingBoxes', 'radioButton']
+    # class_names = ['txt']
     class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
     # for d in map(str, range(0, 1)):
     # xml_root = os.path.join(root, d)
@@ -262,25 +290,38 @@ def get_rec_label():
 
 
 def icdar_to_yolov5():
-	txt_root = '/mnt/data/rz/data/register/detect/rotate'
-	img_root = '/mnt/data/rz/data/register/detect/rotate'
+	txt_root = '/mnt/data/rz/data/UIDetect/combined/exp/cutted'
+	img_root = '/mnt/data/rz/data/UIDetect/combined/exp/cutted'
+	txt_store_root = '/mnt/data/rz/data/UIDetect/combined/exp/labels'
+	if not osp.exists(txt_store_root):
+		os.makedirs(txt_store_root)
 	txt_paths = glob(osp.join(txt_root, '*.txt'))
-	split_flag = ','
-	class_names = ['number', 'owner', 'frame_number', 'registration_number',
-					'manner', 'property', 'cover_code', 'cover_number']
+	split_flag = '\t'
+	filter_class = ['Advertisement']
+	# class_names = ['number', 'owner', 'frame_number', 'registration_number',
+	# 				'manner', 'property', 'cover_code', 'cover_number']
+	class_names = ['Card', 'List Item', 'Toolbar', 'Video', 'Background Image', 'Radio Button', 'On/Off Switch', 'Button Bar', 'Multi-Tab', 'Icon', 'Input', 'Modal', 'Checkbox',
+	    'Number Stepper', 'Pager Indicator', 'Date Picker', 'Text Button', 'Slider', 'Image', 'Drawer', 'Bottom Navigation', 'Text', 'Web View', 'Map View']
 	class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
 	for txtp in tqdm(txt_paths):
 		suffix = osp.basename(txtp).split('.')[0]
-		imgn = suffix + '.png'
+		imgn = suffix + '.jpg'
 		imgp = osp.join(img_root, imgn)
 		imgH, imgW = cv2.imread(imgp).shape[:2]
 		new_lines = []
 		with open(txtp) as f:
 			for line in f:
 				line = line.strip().split(split_flag)
-				loc, cls = line[:8], line[-1]
+				if len(line) == 2:
+					loc, cls = line[0].split(','), line[-1]
+				else:
+					loc, cls = line[:8], line[-1]
+				if cls in filter_class:
+					continue
 				loc = list(map(float, loc))
 				loc = list(map(int, loc))
+				if len(loc) == 4:
+					loc = [loc[0], loc[1], loc[2], loc[1], loc[2], loc[3], loc[0], loc[3]]
 				loc = sort_box(loc) # sort the box points orders
 				xmin, ymin, xmax, ymax = loc[0], loc[1], loc[4], loc[5]
 				dw, dh = 1. / imgW, 1 / imgH
@@ -299,9 +340,10 @@ def icdar_to_yolov5():
 										str(truncate(w, 7)),
 										str(truncate(h, 7))])
 				new_lines.append(new_line)
-		with open(txtp, 'w') as f:
+		txt_store_path = osp.join(txt_store_root, suffix + '.txt')
+		with open(txt_store_path, 'w') as f:
 			f.write('\n'.join(new_lines))
 
 
 if __name__ == "__main__":
-    get_yolov5_label()
+    icdar_to_yolov5()
