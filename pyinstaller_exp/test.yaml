@@ -1,0 +1,15 @@
+SERVICE:
+  NAME: 'test'
+  IP: '0.0.0.0'
+  URI: '/test'
+  IO_MODULE: 'DefaultIO'
+  APPLICATION_MODULE: 'testApp'
+  COMMUNICATION_MODULE: 'defaultFlaskComm'
+  THREADED: True
+LOG:
+  FILE_PATH: './log/test.log'
+  LOG_NAME: 'test'
+  OUTPUT_FORMAT: '{"@timestamp":"%(asctime)s", "Level":"%(levelname)s", "Message":%(message)s, "Class":"ocr"}'
+  TIMEROTATINGFILEHANDLER:
+    WHEN: 'midnight'
+    INTERVAL: 1

@@ -1,0 +1,2 @@
+{"@timestamp":"2021-12-03 11:24:08,529", "Level":"INFO", "Message":{"inputData": "11", "outputData": {"responseCode": "0000", "responseMSG": "succeed", "responseData": "Hello world!--->Receive the hello world"}, "error": null}, "Class":"ocr"}
+{"@timestamp":"2021-12-03 11:26:02,249", "Level":"INFO", "Message":{"inputData": "11", "outputData": {"responseCode": "0000", "responseMSG": "succeed", "responseData": "Hello world!--->Receive the hello world"}, "error": null}, "Class":"ocr"}
