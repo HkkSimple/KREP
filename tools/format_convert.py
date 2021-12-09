@@ -87,8 +87,6 @@ def voc_to_dota(xml_root, txt_store_root, split_flag):
             f.write('\n'.join(dota_lines))
 
 # convert to icdar format
-
-
 def voc_to_icdar(xml_root, txt_store_root, split_flag, filter_classes=[]):
     xml_paths = glob(os.path.join(xml_root, '*.xml'))
     for xmlp in tqdm(xml_paths):
@@ -195,6 +193,9 @@ def load_cvat_icdar(txtp, content='content'):
             results.append(line)
     return results
 
+# icdar format to labelme format: x1,y1,x2,y2,x3,y3,x4,y4 \t content ---> labelme3.0 xml format
+def icdar_to_labelme():
+    pass
 # =======================================================
 
 # 将voc格式的xml文件，转成icdar的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
@@ -290,17 +291,17 @@ def get_rec_label():
 
 
 def icdar_to_yolov5():
-	txt_root = '/mnt/data/rz/data/UIDetect/combined/exp/cutted'
-	img_root = '/mnt/data/rz/data/UIDetect/combined/exp/cutted'
-	txt_store_root = '/mnt/data/rz/data/UIDetect/combined/exp/labels'
+	txt_root = '/mnt/data/rz/data/UIDetect/combined/exp/labels_icdar'
+	img_root = '/mnt/data/rz/data/UIDetect/combined/exp/labels_icdar'
+	txt_store_root = '/mnt/data/rz/data/UIDetect/combined/exp/yolov5_format'
 	if not osp.exists(txt_store_root):
 		os.makedirs(txt_store_root)
 	txt_paths = glob(osp.join(txt_root, '*.txt'))
 	split_flag = '\t'
-	filter_class = ['Advertisement']
+	filter_class = ['Advertisement', 'Card']
 	# class_names = ['number', 'owner', 'frame_number', 'registration_number',
 	# 				'manner', 'property', 'cover_code', 'cover_number']
-	class_names = ['Card', 'List Item', 'Toolbar', 'Video', 'Background Image', 'Radio Button', 'On/Off Switch', 'Button Bar', 'Multi-Tab', 'Icon', 'Input', 'Modal', 'Checkbox',
+	class_names = ['List Item', 'Toolbar', 'Video', 'Background Image', 'Radio Button', 'On/Off Switch', 'Button Bar', 'Multi-Tab', 'Icon', 'Input', 'Modal', 'Checkbox',
 	    'Number Stepper', 'Pager Indicator', 'Date Picker', 'Text Button', 'Slider', 'Image', 'Drawer', 'Bottom Navigation', 'Text', 'Web View', 'Map View']
 	class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
 	for txtp in tqdm(txt_paths):
