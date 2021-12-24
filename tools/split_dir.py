@@ -19,9 +19,9 @@ def split_dir(root, store_root, num):
 
 
 if __name__ == '__main__':
-	img_root = '/mnt/data/rz/data/store/20211207/images'
-	store_root = '/mnt/data/rz/data/store/20211207/split'
+	img_root = '/mnt/data/rz/data/UIDetect/combined/images'
+	store_root = '/mnt/data/rz/data/UIDetect/combined/sub_images/'
 	if not os.path.exists(store_root):
 		os.makedirs(store_root)
-	num = 100
+	num = 2000
 	split_dir(img_root, store_root, num)
