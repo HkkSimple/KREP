@@ -164,10 +164,10 @@ def rotate_img_bbox(img, bboxes, angle=45, scale=1.):
 
 
 if __name__ == "__main__":
-    root = '/mnt/data/rz/data/idCard/v2'
+    root = '/mnt/data/rz/data/idCard/v4'
     img_paths = glob(os.path.join(root, 'org/*.base64'))
     drawed = True
-    store_txt = False
+    store_txt = True
     url = "http://127.0.0.1:30101/ocr/image_angle_detect"
     headers = {"Content-Type": 'application/json;charset=UTF-8'}
 
@@ -175,12 +175,14 @@ if __name__ == "__main__":
     for imgp in tqdm(img_paths):
         name = os.path.basename(imgp)
         name = os.path.splitext(name)[0]
-        store_img_path = os.path.join(root, 'images', name+'.jpg')
-        store_label_path = os.path.join(root, 'annotations', name+'.txt')
-        if not os.path.exists(os.path.join(root, 'images')):
-            os.makedirs(os.path.join(root, 'images'))
-        if not os.path.exists(os.path.join(root, 'annotations')):
-            os.makedirs(os.path.join(root, 'annotations'))
+        img_dir_name = 'image'
+        label_dir_name = 'baiduLabel'
+        store_img_path = os.path.join(root, img_dir_name, name+'.jpg')
+        store_label_path = os.path.join(root, label_dir_name, name+'.txt')
+        if not os.path.exists(os.path.join(root, img_dir_name)):
+            os.makedirs(os.path.join(root, img_dir_name))
+        if not os.path.exists(os.path.join(root, label_dir_name)):
+            os.makedirs(os.path.join(root, label_dir_name))
 
         # =============== get image angle =============
         with open(imgp) as f:
@@ -226,7 +228,7 @@ if __name__ == "__main__":
             rbbox = rot_bbox[i]
             rbbox = ','.join(map(str, rbbox))
             # line = '\t'.join([rbbox, ct, cls])
-            line = ','.join([rbbox, ct])
+            line = ','.join([rbbox, ct, cls])
             new_lines.append(line)
         with open(store_label_path, 'w') as f:
             f.write('\n'.join(new_lines))
@@ -237,22 +239,22 @@ if __name__ == "__main__":
         if drawed:
             drawed_img = draw_text_det_res(rot_bbox, rot_img)
             img_name = name + '.jpg'
-            cv2.imwrite('./drawed/{}'.format(img_name), drawed_img)
+            cv2.imwrite('./data/drawed/{}'.format(img_name), drawed_img)
         
-        if store_txt:
-            h, w = img.shape[:2]
-            img_name = name + '.jpg'
-            txt_name = img_name.split('.')[0] + '.txt'
-            txt_store_path = os.path.join('./drawed/', txt_name)
-            loc = loc.reshape((-1, 8))
-            loc = loc[:, [0, 1, 4, 5]]
-            x_center = (loc[:, 0] + loc[:, 2]) / (2 * w)
-            y_center = (loc[:, 1] + loc[:, 3]) / (2 * h)
-            w_yolo = (loc[:, 2] - loc[:, 0]) / w
-            h_yolo = (loc[:, 3] - loc[:, 1]) / h
-            lines = []
-            for xc, yc, wy, hy in zip(x_center, y_center, w_yolo, h_yolo):
-                line = '1 ' + ' '.join(map(str, [xc, yc, wy, hy]))
-                lines.append(line)
-            with open(txt_store_path, 'w') as f:
-                f.write('\n'.join(lines))
+        # if store_txt:
+        #     h, w = img.shape[:2]
+        #     img_name = name + '.jpg'
+        #     txt_name = img_name.split('.')[0] + '.txt'
+        #     txt_store_path = os.path.join('./drawed/', txt_name)
+        #     loc = loc.reshape((-1, 8))
+        #     loc = loc[:, [0, 1, 4, 5]]
+        #     x_center = (loc[:, 0] + loc[:, 2]) / (2 * w)
+        #     y_center = (loc[:, 1] + loc[:, 3]) / (2 * h)
+        #     w_yolo = (loc[:, 2] - loc[:, 0]) / w
+        #     h_yolo = (loc[:, 3] - loc[:, 1]) / h
+        #     lines = []
+        #     for xc, yc, wy, hy in zip(x_center, y_center, w_yolo, h_yolo):
+        #         line = '1 ' + ' '.join(map(str, [xc, yc, wy, hy]))
+        #         lines.append(line)
+        #     with open(txt_store_path, 'w') as f:
+        #         f.write('\n'.join(lines))

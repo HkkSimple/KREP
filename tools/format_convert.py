@@ -13,6 +13,7 @@ sys.path.append('/mnt/data/rz/programe/KREP')
 
 from tools.filter_char import find_unchinese
 from util.order_points import sort_box
+from util.make_dirs import make_dirs
 
 # Truncates numbers to N decimals
 def truncate(n, decimals=0):
@@ -51,7 +52,7 @@ def extract_voc(xmlp, split_flag, default_class_name=None):
 
 			if att is None:
 				att = '###'
-			line = split_flag.join(map(str, points)) + '\t' + name + '\t' + att
+			line = split_flag.join(map(str, points)) + split_flag + name + split_flag + att
 			lines.append(line)
 		return {'filename': filename,
 				'items': lines,
@@ -66,6 +67,36 @@ def extract_voc(xmlp, split_flag, default_class_name=None):
 			'folder': folder,
 			'attributes': '###'}
 
+def extract_cvat_xml(xmlp):
+	error_image_names = [] # store empty image name
+	if not os.path.exists(xmlp):
+		print('{} file is not exists.'.format(xmlp))
+		return
+	with open(xmlp) as f:
+		tree = ET.parse(f)
+		root = tree.getroot()
+
+	image_obj = root.findall('image')
+	results = []
+	for imobj in image_obj:
+		location = ''
+		filename = imobj.get('name')
+		filename = filename.split('/')[-1]
+		points = imobj.findall('points')
+		if len(points) == 0:
+			error_image_names.append(filename)
+			continue
+		for pt in points:
+			loc = pt.get('points')
+			location += loc + ','
+		if location[-1] == ',':
+			location = location[:-1]
+		location = location.split(',')
+		item = {'location': location, 
+				'filename': filename}
+		results.append(item)
+	return results, error_image_names
+
 
 # convert to dota format
 def voc_to_dota(xml_root, txt_store_root, split_flag):
@@ -78,11 +109,10 @@ def voc_to_dota(xml_root, txt_store_root, split_flag):
 		name = content['filename']
 		lines = content['items']
 		# dota line format: x1,y1,x2,y2,x3,y3,x4,y4,category,difficult
-		# dota_lines = ['imagesource:GF-2', 'gsd:null']
-		dota_lines = []
+		dota_lines = ['imagesource:GF-2', 'gsd:null']
+		# dota_lines = []
 		difficult = '0'  # 0 or 1; 1->difficult, 0->not difficult
 		for line in lines:
-			print(line)
 			line = line.strip().split('\t')[:2]
 			line = split_flag.join(line)
 			line = line + split_flag + difficult
@@ -127,6 +157,7 @@ def voc_to_icdar(xml_root, txt_store_root, split_flag, filter_classes=[]):
 	return error_names
 		
 def voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',', filter_classes=[]):
+	error_names = []
 	if not osp.exists(txt_store_root):
 		os.makedirs(txt_store_root)
 	xml_paths = glob(osp.join(xml_root, '*.xml'))
@@ -139,7 +170,7 @@ def voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',', filter_cl
 		new_lines = []
 		for line in lines:
 			line = line.split(split_flag)
-			loc, cls = line[:8], line[-1]
+			loc, cls = line[:8], line[8]
 			if cls in filter_classes:  # 过滤掉在filter classes中出现的类
 				continue
 			# if cls == 'icon':
@@ -168,6 +199,9 @@ def voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',', filter_cl
 		if len(new_lines) > 0:
 			with open(txt_store_path, 'w') as f:
 				f.write('\n'.join(new_lines))
+		else:
+			error_names.append(img_name)
+	return error_names
 
 # 将voc格式的xml文件转成单个字段识别的格式
 # suffix: 在做line的filename那一栏时，是否需要添加前缀
@@ -216,7 +250,7 @@ def icdar_to_labelme():
 
 # 将voc格式的xml文件，转成icdar的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
 def get_icdar_label():
-	root = '/mnt/data/rz/data/idCard/v1'
+	root = '/mnt/data/rz/data/idCard/v3'
 	image_root = os.path.join(root, 'images')
 	txt_store_root = os.path.join(root, 'personLabelTxt')
 	error_store_root = os.path.join(root, 'error')
@@ -247,32 +281,43 @@ def get_icdar_label():
 	#         f.write('\n'.join(result))
 
 def get_dota_label():
-	root = '/mnt/data/rz/data/idCard/v1'
-	txt_store_root = os.path.join(root, 'labelTxt')
+	root = '/mnt/data/rz/data/idCard/v3'
+	txt_store_root = '/mnt/data/rz/data/idCard/exp/20220104/train'
+	txt_store_root = os.path.join(txt_store_root, 'labelTxt')
 	if not osp.exists(txt_store_root):
 		os.makedirs(txt_store_root)
 	xml_root = os.path.join(root, 'xml')
-	voc_to_dota(xml_root, txt_store_root, split_flag=',')
+	voc_to_dota(xml_root, txt_store_root, split_flag=' ')
 		
 
 # 将voc格式的xml文件，转成yolov5的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
 def get_yolov5_label():
-	root = '/mnt/data/rz/data/UIDetect/sap/elements/element_detect'
-	txt_store_root = '/mnt/data/rz/data/UIDetect/sap/elements/element_detect/labels_one_class'
+	root = '/mnt/data/rz/data/idCard/v4/cornered/person/split'
+	txt_store_root = '/mnt/data/rz/data/idCard/exp/20220106/labels'
+	img_root = '/mnt/data/rz/data/idCard/v4/cornered/person/split/0'
+	error_store_root = '/mnt/data/rz/data/idCard/v4/cornered/person/split/error'
+
 	if not os.path.exists(txt_store_root):
 		os.makedirs(txt_store_root)
 	# class_names = ['number', 'owner', 'frame_number', 'registration_number',
 	#                'manner', 'property', 'cover_code', 'cover_number', 'number_code', 
 	#                'oil_type', 'vehicle_brand', 'domestic_import', 'factory', 'idCard']
-	class_names = ['element', 'txt', 'button', 'inputBox', 'checkBox', 'comboBox', 
-				   'minimize', 'maximize', 'close', 'slidingBoxes', 'radioButton']
-	# class_names = ['txt']
+	# class_names = ['element', 'txt', 'button', 'inputBox', 'checkBox', 'comboBox', 
+	# 			   'minimize', 'maximize', 'close', 'slidingBoxes', 'radioButton']
+	# class_names = ['rectangle']
+	class_names = ('name', 'sex', 'birthday', 'address', 'number', 'authority', 'validity', 'nation')
 	class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
 	# for d in map(str, range(0, 1)):
 	# xml_root = os.path.join(root, d)
-	xml_root= os.path.join(root, 'xml')
-	voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',',
-					filter_classes=['other'])
+	xml_root= os.path.join(root, 'xml/0')
+	error_img_name = voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',',
+								   filter_classes=['other'])
+
+	make_dirs(error_store_root)
+	for errorn in error_img_name:
+		error_imgp = os.path.join(img_root, errorn)
+		shutil.move(error_imgp, error_store_root)
+	
 
 # 将voc格式的xml文件，转成txt格式的识别格式去做文字识别:filename '\t' image_content(exp:1234)
 def get_rec_label():
@@ -325,9 +370,9 @@ def get_rec_label():
 
 
 def icdar_to_yolov5():
-	txt_root = '/mnt/data/rz/data/idCard/v2/yolo_format_labels'
-	img_root = '/mnt/data/rz/data/idCard/v2/images'
-	txt_store_root = '/mnt/data/rz/data/idCard/v2/labels'
+	txt_root = '/mnt/data/rz/data/idCard/v3/personLabelTxt/'
+	img_root = '/mnt/data/rz/data/idCard/v3/images'
+	txt_store_root = '/mnt/data/rz/data/idCard/v3/yolov5LabelTxt'
 	if not osp.exists(txt_store_root):
 		os.makedirs(txt_store_root)
 	txt_paths = glob(osp.join(txt_root, '*.txt'))
@@ -338,7 +383,7 @@ def icdar_to_yolov5():
 	# class_names = ['List Item', 'Toolbar', 'Video', 'Background Image', 'Radio Button', 'On/Off Switch', 'Button Bar', 'Multi-Tab', 'Icon', 'Input', 'Modal', 'Checkbox',
 	#     'Number Stepper', 'Pager Indicator', 'Date Picker', 'Text Button', 'Slider', 'Image', 'Drawer', 'Bottom Navigation', 'Text', 'Web View', 'Map View']
 	class_names = ('name', 'sex', 'birthday', 'address', 'number', 'authority', 'validity', 'nation')
-	class_names_map = {'出生':'birthday', '公民身份号码':'number', '失效日期':'validity', '姓名':'name', '性别':'sex', '住址':'address', '签发日期':'validity', '签发机关':'authority', '民族':'nation'}
+	# class_names_map = {'出生':'birthday', '公民身份号码':'number', '失效日期':'validity', '姓名':'name', '性别':'sex', '住址':'address', '签发日期':'validity', '签发机关':'authority', '民族':'nation'}
 	class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
 	for txtp in tqdm(txt_paths):
 		suffix = osp.basename(txtp).split('.')[0]
@@ -353,7 +398,8 @@ def icdar_to_yolov5():
 					loc, cls = line[0].split(','), line[-1]
 				else:
 					loc, cls = line[0], line[-1]
-				cls = class_names_map[cls]
+				# cls = class_names_map[cls]
+				cls = class_idx[cls]
 				loc = loc.split(',')
 				if cls in filter_class:
 					continue
@@ -384,5 +430,80 @@ def icdar_to_yolov5():
 			f.write('\n'.join(new_lines))
 
 
+# 获取图片前景的边角(身份证、银行卡之类的)
+def get_corner_box():
+	xmlp = '/mnt/data/rz/data/idCard/v3/annotations.xml'
+	image_root = '/mnt/data/rz/data/idCard/v3/images'
+	image_store_root = '/mnt/data/rz/data/idCard/v3/corner/images'
+	txt_store_root = '/mnt/data/rz/data/idCard/v3/corner/labelTxt'
+	if not os.path.exists(image_store_root):
+		os.makedirs(image_store_root)
+	if not os.path.exists(txt_store_root):
+		os.makedirs(txt_store_root)
+
+	def general_box(loc, shape, box_side_ratio=0.1):
+		H, W = shape
+		sideH, sideW = int(H*box_side_ratio), int(W*box_side_ratio)
+		minX, minY, maxX, maxY = 0, 0, W, H
+
+		boxes = []
+		for lc in loc:
+			cx, cy = lc
+			half_side_x, half_side_y = sideW / 2, sideH / 2
+			leftx, lefty = cx - half_side_x, cy - half_side_y
+			rightx, righty = cx + half_side_x, cy + half_side_y
+			if leftx < minX:
+				leftx = minX
+			if lefty < minY:
+				lefty = minY
+			if rightx > maxX:
+				rightx = maxX
+			if righty > maxY:
+				righty = maxY
+
+			# convert to yolo5 format
+			dw, dh = 1. / W, 1 / H
+			x = (leftx + rightx)/2
+			y = (lefty + righty)/2
+			w = rightx - leftx
+			h = righty - lefty
+			x = x * dw
+			w = w * dw
+			y = y * dh
+			h = h * dh
+			idx = '0'
+			new_line = ' '.join([idx,
+									str(truncate(x, 7)),
+									str(truncate(y, 7)),
+									str(truncate(w, 7)),
+									str(truncate(h, 7))])
+			boxes.append(new_line)
+		return boxes
+
+	result, error_image_file = extract_cvat_xml(xmlp)
+	for res in tqdm(result):
+		imgn = res['filename']
+		imgp = os.path.join(image_root, imgn)
+		txtn = imgn.split('.')[0] + '.txt'
+		txtp = os.path.join(txt_store_root, txtn)
+		img = cv2.imread(imgp)
+		h, w = img.shape[:2]
+		loc = res['location']
+		loc = list(map(float, loc))
+		loc = np.array(loc, dtype='int')
+		loc = loc.reshape((-1, 2))
+		loc = loc.tolist()
+		boxes = general_box(loc, (h, w))
+		shutil.copy(imgp, image_store_root)
+		with open(txtp, 'w') as f:
+			f.write('\n'.join(boxes))
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
-	get_icdar_label()
+	get_yolov5_label()

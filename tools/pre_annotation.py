@@ -67,14 +67,16 @@ def get_cut_image_label():
 	for xmlp in tqdm(xml_paths):
 		gen_cut_image_voc_format(template_xml_path, xmlp, content_dict, new_xml_root)
 
+# txt line format eg:x1,y1,x2,y2,x3,y3,x4,y4,content,class
 def update_object(txtp, object_xml_path):
 	objes = []
 	if not os.path.exists(txtp):
 		return objes
 	with open(txtp) as f:
 		for i, line in enumerate(f):
-			loc, ct = line.strip().split('\t')
-			loc = loc.strip().split(',')
+			line = line.strip().split(',')
+			loc, cls = line[:8], line[8]
+			ct = '###'
 			x1, y1, x2, y2, x3, y3, x4, y4 = loc
 			new_points = [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
 			with open(object_xml_path) as objf:
@@ -82,6 +84,8 @@ def update_object(txtp, object_xml_path):
 				polys = obj_root.find('polygon').findall('pt')
 			id = obj_root.find('id')
 			id.text = str(i)
+			name = obj_root.find('name')
+			name.text = cls
 			for i, pt in enumerate(polys):
 				pt.find('x').text, pt.find('y').text = new_points[i]
 			attr = obj_root.find('attributes')
@@ -93,11 +97,11 @@ def update_object(txtp, object_xml_path):
 
 # 对整图进行ocr预标注，包括文字位置，文字内容。从icdar格式，转到cvat中的labelme3.0格式
 def get_image_label():
-	labels_root = '/mnt/data/rz/data/store/20211207/labels'
+	labels_root = '/mnt/data/rz/data/idCard/v4/cornered/national/split/0'
 	object_xml_path = '../data/object.xml'
-	xml_root = '/mnt/data/rz/data/store/20211207/xml/'
-	xml_store_root_ = '/mnt/data/rz/data/store/20211207/pred_label/'
-	for d in range(1, 6):
+	xml_root = '/mnt/data/rz/data/idCard/v4/cornered/national/split/xml/'
+	xml_store_root_ = '/mnt/data/rz/data/idCard/v4/cornered/national/split/pre_xml'
+	for d in range(0, 1):
 		xml_paths = glob(os.path.join(xml_root, str(d), '*.xml'))
 		xml_store_root = os.path.join(xml_store_root_, str(d))
 		if not os.path.exists(xml_store_root):
