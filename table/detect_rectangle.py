@@ -49,7 +49,6 @@ def find_squares(img):
                 squares.append(cnt)
                 centers.append([cx, cy])
 
-    
     return squares, centers, img
 
 

@@ -66,12 +66,3 @@ if __name__ == '__main__':
 		imgn = str(idx) + '.jpg'
 		imgp = os.path.join('./data/table/table3', imgn)
 		cv.imwrite(imgp, table_img)
-	# print(table_img.shape)
-	# for i, x in enumerate(range(0, tableW, tableH)):
-	# 	endX = min(x + tableH, tableW)
-	# 	block = table_img[3:(tableH-3), (x+2):(endX-10), :]
-	# 	print(block.shape)
-	# 	# 存储数据
-	# 	imgn = str(i) + '.jpg'
-	# 	imgp = os.path.join('./data/table/table1', imgn)
-	# 	cv.imwrite(imgp, block)
