@@ -1,23 +1,11 @@
-import urllib
-import copy
-from matplotlib import pyplot as plt
 import math
 import base64
 from io import BytesIO
-from PIL import Image
 import numpy as np
 import cv2
 import requests
 import json
-from glob import glob
-from multiprocessing import Pool
-from time import time
-from tqdm import tqdm
-import os
-from pprint import pprint
 import pickle as cpk
-from concurrent import futures
-import shutil
 
 
 def draw_text_det_res(dt_boxes, img_path):
@@ -162,99 +150,61 @@ def rotate_img_bbox(img, bboxes, angle=45, scale=1.):
 
     return rot_img, rot_bboxes
 
-
-if __name__ == "__main__":
-    root = '/mnt/data/rz/data/idCard/v5'
-    img_paths = glob(os.path.join(root, 'org/*.base64'))
-    drawed = False
-    store_txt = True
-    url = "http://127.0.0.1:30101/ocr/image_angle_detect"
+def get_image_angle(url, img):
     headers = {"Content-Type": 'application/json;charset=UTF-8'}
+    angle_result = get_request_result(img, url, headers)
+    angle = angle_result["responseData"]['angle']
+    return angle
+
+# 提取原始文件内容，包括图片方向矫正，base64转存图片，json转txt，文字标注框根据图片角度矫正而矫正
+def extract_source_data(imgp, image_angle_detect_url):
+    # =============== get image angle =============
+    with open(imgp) as f:
+        content = f.read().split(',')[1]
+        img = base64_to_image(content)
+        if img is None:
+            return None
+        angle = get_image_angle(image_angle_detect_url, img)
 
 
-    for imgp in tqdm(img_paths):
-        name = os.path.basename(imgp)
-        name = os.path.splitext(name)[0]
-        img_dir_name = 'image'
-        label_dir_name = 'baiduLabel'
-        store_img_path = os.path.join(root, img_dir_name, name+'.jpg')
-        store_label_path = os.path.join(root, label_dir_name, name+'.txt')
-        if not os.path.exists(os.path.join(root, img_dir_name)):
-            os.makedirs(os.path.join(root, img_dir_name))
-        if not os.path.exists(os.path.join(root, label_dir_name)):
-            os.makedirs(os.path.join(root, label_dir_name))
+    # =============== extract images =============
+    lines = []
+    points = []
+    rot_points = []
+    with open(imgp.replace('base64', 'json'), 'r', encoding='utf-8') as f:
+        ct = json.load(f)
+        if len(ct) == 0: # 有标注文件为空的情况
+            return None
+    ct = json.loads(ct)
+    result = ct.get("words_result", None)
+    if result is None:
+        return None
+    for k, v in result.items():
+        class_names_map = {'出生':'birthday', '公民身份号码':'number', '失效日期':'validity', 
+                           '姓名':'name', '性别':'sex', '住址':'address', 
+                           '签发日期':'validity', '签发机关':'authority', '民族':'nation'}
+        cls = class_names_map[k]
+        loc = v["location"]
+        left, top, width, height = loc['left'], loc['top'], loc['width'], loc['height']
+        x1, y1 = left, top
+        x2, y2 = x1 + width, y1
+        x3, y3 = x2, y1+height
+        x4, y4 = x1, y3
+        pt = [x1, y1, x2, y2, x3, y3, x4, y4]
+        points.append(pt)
+        words = v["words"]
+        line = ','.join(map(str, pt)) + '\t' + words + '\t' + cls
+        lines.append(line)
 
-        # =============== get image angle =============
-        with open(imgp) as f:
-            content = f.read().split(',')[1]
-            img = base64_to_image(content)
-        # get image angle
-        angle_result = get_request_result(img, url, headers)
-        angle = angle_result["responseData"]['angle']
-
-
-        # =============== extract images =============
-        lines = []
-        points = []
-        rot_points = []
-        with open(imgp.replace('base64', 'json'), 'r', encoding='utf-8') as f:
-            ct = json.load(f)
-        ct = json.loads(ct)
-        result = ct.get("words_result", None)
-        if result is None:
-            continue
-        for k, v in result.items():
-            class_names_map = {'出生':'birthday', '公民身份号码':'number', '失效日期':'validity', '姓名':'name', '性别':'sex', '住址':'address', '签发日期':'validity', '签发机关':'authority', '民族':'nation'}
-            cls = class_names_map[k]
-            loc = v["location"]
-            left, top, width, height = loc['left'], loc['top'], loc['width'], loc['height']
-            x1, y1 = left, top
-            x2, y2 = x1 + width, y1
-            x3, y3 = x2, y1+height
-            x4, y4 = x1, y3
-            pt = [x1, y1, x2, y2, x3, y3, x4, y4]
-            points.append(pt)
-            words = v["words"]
-            line = ','.join(map(str, pt)) + '\t' + words + '\t' + cls
-            lines.append(line)
-
-        bboxes = np.reshape(points, (-1, 4, 2))
-        # rotate image and bbox
-        rot_img, rot_bbox = rotate_img_bbox(img, bboxes, angle)
-        rot_bbox = np.array(rot_bbox, dtype='int').reshape((-1, 8)).tolist()
-        new_lines = []
-        for i, line in enumerate(lines):
-            _, ct, cls = line.strip().split('\t')
-            rbbox = rot_bbox[i]
-            rbbox = ','.join(map(str, rbbox))
-            # line = '\t'.join([rbbox, ct, cls])
-            line = ','.join([rbbox, ct, cls])
-            new_lines.append(line)
-        with open(store_label_path, 'w') as f:
-            f.write('\n'.join(new_lines))
-        cv2.imwrite(store_img_path, rot_img)
-
-        # =============================
-
-        if drawed:
-            drawed_img = draw_text_det_res(rot_bbox, rot_img)
-            img_name = name + '.jpg'
-            cv2.imwrite('./data/drawed/{}'.format(img_name), drawed_img)
-        
-        # if store_txt:
-        #     h, w = img.shape[:2]
-        #     img_name = name + '.jpg'
-        #     txt_name = img_name.split('.')[0] + '.txt'
-        #     txt_store_path = os.path.join('./drawed/', txt_name)
-        #     loc = loc.reshape((-1, 8))
-        #     loc = loc[:, [0, 1, 4, 5]]
-        #     x_center = (loc[:, 0] + loc[:, 2]) / (2 * w)
-        #     y_center = (loc[:, 1] + loc[:, 3]) / (2 * h)
-        #     w_yolo = (loc[:, 2] - loc[:, 0]) / w
-        #     h_yolo = (loc[:, 3] - loc[:, 1]) / h
-        #     lines = []
-        #     for xc, yc, wy, hy in zip(x_center, y_center, w_yolo, h_yolo):
-        #         line = '1 ' + ' '.join(map(str, [xc, yc, wy, hy]))
-        #         lines.append(line)
-        #     with open(txt_store_path, 'w') as f:
-        #         f.write('\n'.join(lines))
+    bboxes = np.reshape(points, (-1, 4, 2))
+    # rotate image and bbox
+    rot_img, rot_bbox = rotate_img_bbox(img, bboxes, angle)
+    rot_bbox = np.array(rot_bbox, dtype='int').reshape((-1, 8)).tolist()
+    new_lines = []
+    for i, line in enumerate(lines):
+        _, ct, cls = line.strip().split('\t')
+        rbbox = rot_bbox[i]
+        rbbox = ','.join(map(str, rbbox))
+        line = ','.join([rbbox, ct, cls])
+        new_lines.append(line)
+    return new_lines, rot_img

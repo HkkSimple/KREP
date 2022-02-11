@@ -49,9 +49,9 @@ def get_cut_image_label():
 	template_xml_path = '../data/template.xml'
 	content_dict = {}
 
-	pre_ann_file_path = '/mnt/data/rz/data/register/clean/rec/v6/idCard/pre_labels.txt'
-	old_xml_root = '/mnt/data/rz/data/register/clean/rec/v6/idCard/xml'
-	new_xml_root = '/mnt/data/rz/data/register/clean/rec/v6/idCard/new_xml'
+	pre_ann_file_path = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/baiduLabels.txt'
+	old_xml_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/xml'
+	new_xml_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/new_xml'
 	with open(pre_ann_file_path) as f:
 		for line in f:
 			item = line.strip().split('\t')
@@ -74,9 +74,11 @@ def update_object(txtp, object_xml_path):
 		return objes
 	with open(txtp) as f:
 		for i, line in enumerate(f):
-			line = line.strip().split(',')
-			loc, cls = line[:8], line[8]
-			ct = '###'
+			line = line.strip().split('\t')
+			loc, ct = line
+			loc = loc.split(',')
+			# loc, cls = line[:8], line[8]
+			cls = 'content' # TODO: 输入格式的不同，导致ct, cls位置不同，需要统一
 			x1, y1, x2, y2, x3, y3, x4, y4 = loc
 			new_points = [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
 			with open(object_xml_path) as objf:
@@ -89,7 +91,7 @@ def update_object(txtp, object_xml_path):
 			for i, pt in enumerate(polys):
 				pt.find('x').text, pt.find('y').text = new_points[i]
 			attr = obj_root.find('attributes')
-			attr.text = 'content=' + "'" + ct
+			attr.text = 'text=' + "'" + ct
 			objes.append(obj_root)
 	return objes
 
@@ -97,30 +99,28 @@ def update_object(txtp, object_xml_path):
 
 # 对整图进行ocr预标注，包括文字位置，文字内容。从icdar格式，转到cvat中的labelme3.0格式
 def get_image_label():
-	labels_root = '/mnt/data/rz/data/idCard/v4/cornered/national/split/0'
+	labels_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/address/labels'
 	object_xml_path = '../data/object.xml'
-	xml_root = '/mnt/data/rz/data/idCard/v4/cornered/national/split/xml/'
-	xml_store_root_ = '/mnt/data/rz/data/idCard/v4/cornered/national/split/pre_xml'
-	for d in range(0, 1):
-		xml_paths = glob(os.path.join(xml_root, str(d), '*.xml'))
-		xml_store_root = os.path.join(xml_store_root_, str(d))
-		if not os.path.exists(xml_store_root):
-			os.makedirs(xml_store_root)
+	xml_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/address/xml/'
+	xml_store_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/address/pre_xml'
+	xml_paths = glob(os.path.join(xml_root, '*.xml'))
+	if not os.path.exists(xml_store_root):
+		os.makedirs(xml_store_root)
 
-		for src_xmlp in tqdm(xml_paths):
-			xmln = os.path.basename(src_xmlp)
-			xml_store_path = os.path.join(xml_store_root, xmln)
-			with open(src_xmlp) as f:
-				tree = ET.parse(f)
-				root = tree.getroot()
-			imgn = root.find('filename').text
-			txtn = imgn.split('.')[0] + '.txt'
-			txtp = os.path.join(labels_root, txtn)
-			objes = update_object(txtp=txtp, object_xml_path=object_xml_path)
-			if len(objes) > 0:
-				root.extend(objes)
-			tree.write(xml_store_path, encoding='utf-8', xml_declaration=True)
-			# tree.write('tt.xml', encoding='utf-8', xml_declaration=True)
+	for src_xmlp in tqdm(xml_paths):
+		xmln = os.path.basename(src_xmlp)
+		xml_store_path = os.path.join(xml_store_root, xmln)
+		with open(src_xmlp) as f:
+			tree = ET.parse(f)
+			root = tree.getroot()
+		imgn = root.find('filename').text
+		txtn = imgn.split('.')[0] + '.txt'
+		txtp = os.path.join(labels_root, txtn)
+		objes = update_object(txtp=txtp, object_xml_path=object_xml_path)
+		if len(objes) > 0:
+			root.extend(objes)
+		tree.write(xml_store_path, encoding='utf-8', xml_declaration=True)
+		# tree.write('tt.xml', encoding='utf-8', xml_declaration=True)
 
 
 if __name__ == "__main__":
