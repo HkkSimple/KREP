@@ -74,11 +74,12 @@ def update_object(txtp, object_xml_path):
 		return objes
 	with open(txtp) as f:
 		for i, line in enumerate(f):
-			line = line.strip().split('\t')
-			loc, ct = line
-			loc = loc.split(',')
+			line = line.strip().split(',')
+			loc, ct, cls = line[:8], line[8], line[9]
+			# loc = loc.split(',')
 			# loc, cls = line[:8], line[8]
-			cls = 'content' # TODO: 输入格式的不同，导致ct, cls位置不同，需要统一
+			# cls = 'content' # TODO: 输入格式的不同，导致ct, cls位置不同，需要统一
+			# cls = 'text' # TODO: 输入格式的不同，导致ct, cls位置不同，需要统一
 			x1, y1, x2, y2, x3, y3, x4, y4 = loc
 			new_points = [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
 			with open(object_xml_path) as objf:
@@ -91,7 +92,8 @@ def update_object(txtp, object_xml_path):
 			for i, pt in enumerate(polys):
 				pt.find('x').text, pt.find('y').text = new_points[i]
 			attr = obj_root.find('attributes')
-			attr.text = 'text=' + "'" + ct
+			# attr.text = 'text=' + "'" + ct
+			attr.text = 'content=' + "'" + ct
 			objes.append(obj_root)
 	return objes
 
@@ -99,10 +101,10 @@ def update_object(txtp, object_xml_path):
 
 # 对整图进行ocr预标注，包括文字位置，文字内容。从icdar格式，转到cvat中的labelme3.0格式
 def get_image_label():
-	labels_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/address/labels'
+	labels_root = '/mnt/data/rz/data/IE/invoice/template/labels'
 	object_xml_path = '../data/object.xml'
-	xml_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/address/xml/'
-	xml_store_root = '/mnt/data/rz/data/idCard/v4/rec/baiduCut/address/pre_xml'
+	xml_root = '/mnt/data/rz/data/IE/invoice/template/xml'
+	xml_store_root = '/mnt/data/rz/data/IE/invoice/template/pre_xml'
 	xml_paths = glob(os.path.join(xml_root, '*.xml'))
 	if not os.path.exists(xml_store_root):
 		os.makedirs(xml_store_root)

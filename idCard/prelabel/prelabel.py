@@ -16,7 +16,7 @@ from corner import get_cornered_img
 
 
 if __name__ == "__main__":
-    root = '/mnt/data/rz/data/idCard/v6'
+    root = '/mnt/data/rz/data/idCard/clear/0218_0226/'
     source_data_dir = osp.join(root, 'org')
     org_img_paths = glob(osp.join(source_data_dir, '*.base64'))
     image_angle_detect_url = "http://127.0.0.1:30101/ocr/image_angle_detect"
@@ -39,8 +39,6 @@ if __name__ == "__main__":
         org_imgn = osp.basename(imgp).replace('base64', 'jpg')
         extract_data = extract_source_data(imgp, image_angle_detect_url)
         if extract_data is None:
-            # line = 'images/' + org_imgn + '\t' + '###'
-            # error_lines.append(line)
             shutil.copy(imgp, except_img_root)
             shutil.copy(imgp.replace('base64', 'json'), except_img_root)
             continue
@@ -71,14 +69,8 @@ if __name__ == "__main__":
                 continue
             cls, ct = line.split('\t')
             # t = str(int(time()*1000000))
-            if cls != 'address': # 除了地址地段，其余的以百度识别结果为准
-                imgn = str(i) + '_' + org_imgn
-                store_cutted_img_path = osp.join(store_cutted_img_root, imgn)
-                cv2.imwrite(store_cutted_img_path, cutted_im)
-                line = 'images/' + imgn + '\t' + ct
-                item_lines.append(line)
             # 对于地址字段，需要进一步进行处理
-            else:
+            if cls == 'address': 
                 baidu_address = ct
                 custom_address_list = custom_address_info['content']
                 custom_address_cutted_imgs = custom_address_info['img']
@@ -103,10 +95,41 @@ if __name__ == "__main__":
                     line = 'images/' + imgn + '\t' + baidu_address
                     cv2.imwrite(imgp, cutted_im)
                     error_lines.append(line)
+            # 生日的结果会带有日期格式化补齐，所以需要把补齐的0去掉
+            elif cls == 'birthday':
+                new_date = ''
+                date = ''.join(ch for ch in ct if ch in '0123456789')
+                if len(date) == 8:
+                    new_date = date[:4] + '年'
+                    if date[4] == '0':
+                        new_date = new_date + date[5] + '月'
+                    else:
+                        new_date = new_date + date[4:6] + '月'
+                    if date[6] == '0':
+                        new_date = new_date + date[7] + '日'
+                    else:
+                        new_date = new_date + date[6:8] + '日'
+                    imgn = str(i) + '_' + org_imgn
+                    store_cutted_img_path = osp.join(store_cutted_img_root, imgn)
+                    cv2.imwrite(store_cutted_img_path, cutted_im)
+                    line = 'images/' + imgn + '\t' + new_date
+                    item_lines.append(line)
+                else:
+                    imgn = str(i) + '_' + org_imgn
+                    imgp = osp.join(error_img_root, imgn)
+                    line = 'images/' + imgn + '\t' + baidu_address
+                    cv2.imwrite(imgp, cutted_im)
+                    error_lines.append(line)
+            # 除了地址地段，其余的以百度识别结果为准
+            else:
+                imgn = str(i) + '_' + org_imgn
+                store_cutted_img_path = osp.join(store_cutted_img_root, imgn)
+                cv2.imwrite(store_cutted_img_path, cutted_im)
+                line = 'images/' + imgn + '\t' + ct
+                item_lines.append(line)
 
     with  open(store_cutted_txt_path, 'w') as f:
         f.write('\n'.join(item_lines))
 
     with open(error_txt_path, 'w') as f:
         f.write('\n'.join(error_lines))
-

@@ -128,7 +128,6 @@ def voc_to_icdar(xml_root, txt_store_root, split_flag, filter_classes=[]):
 	xml_paths = glob(os.path.join(xml_root, '*.xml'))
 	for xmlp in tqdm(xml_paths):
 		content = extract_voc(xmlp, split_flag)
-		print(content)
 		if content is None:
 			print('xml path:{} is error'.format(xmlp))
 			continue
@@ -254,9 +253,9 @@ def icdar_to_labelme():
 
 # 将voc格式的xml文件，转成icdar的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
 def get_icdar_label():
-	root = '/mnt/data/rz/data/invoice/reality'
-	image_root = os.path.join(root, 'images')
-	txt_store_root = os.path.join(root, 'personLabelTxt')
+	root = '/mnt/data/rz/data/store'
+	image_root = os.path.join(root, 'split/0')
+	txt_store_root = os.path.join(root, 'labels/personLabelTxt_0')
 	error_store_root = os.path.join(root, 'error')
 	if not osp.exists(txt_store_root):
 		os.makedirs(txt_store_root)
@@ -296,10 +295,10 @@ def get_dota_label():
 
 # 将voc格式的xml文件，转成yolov5的格式去做文字检测:x1,y1,x2,y2,x3,y3,x4,y4,cls
 def get_yolov5_label():
-	root = '/mnt/data/rz/data/invoice/scan'
-	txt_store_root = '/mnt/data/rz/data/invoice/scan/split/yoloLabelTxt_0'
-	img_root = '/mnt/data/rz/data/invoice/scan/split/0'
-	error_store_root = '/mnt/data/rz/data/invoice/scan/error'
+	root = '/mnt/data/rz/data/invoice/v2'
+	txt_store_root = '/mnt/data/rz/data/invoice/v2/labels/val'
+	img_root = '/mnt/data/rz/data/invoice/v2/images/val'
+	error_store_root = '/mnt/data/rz/data/invoice/v2/error'
 
 	if not os.path.exists(txt_store_root):
 		os.makedirs(txt_store_root)
@@ -310,12 +309,14 @@ def get_yolov5_label():
 	# 			   'minimize', 'maximize', 'close', 'slidingBoxes', 'radioButton']
 	# class_names = ['rectangle']
 	# class_names = ('name', 'sex', 'birthday', 'address', 'number', 'authority', 'validity', 'nation')
-	class_names = ('stamp', 'invoiceNo', 'invoiceDate', 'buyerName', 'totalAmount', 
+	# class_names = ('stamp', 'invoiceNo', 'invoiceDate', 'buyerName', 'totalAmount', 
+	# 			  'priceAndTax', 'verification', 'invoiceCode')
+	class_names = ('invoiceNo', 'invoiceDate', 'buyerName', 'totalAmount', 
 				  'priceAndTax', 'verification', 'invoiceCode')
 	class_idx = {cls: str(idx) for idx, cls in enumerate(class_names)}
 	# for d in map(str, range(0, 1)):
 	# xml_root = os.path.join(root, d)
-	xml_root= os.path.join(root, 'xml')
+	xml_root= os.path.join(root, 'xml/val')
 	error_img_name = voc_to_yolov5(xml_root, txt_store_root, class_idx, split_flag=',',
 								   filter_classes=[])
 
@@ -512,4 +513,4 @@ def get_corner_box():
 
 
 if __name__ == "__main__":
-	get_yolov5_label()
+	get_icdar_label()

@@ -19,11 +19,11 @@ def split_dir(root, store_root, num):
 
 
 if __name__ == '__main__':
-	img_root = '/mnt/data/rz/data/invoice/scan/images'
-	store_root = '/mnt/data/rz/data/invoice/scan/split'
+	img_root = '/mnt/data/rz/data/store/org'
+	store_root = '/mnt/data/rz/data/store/split'
 	if not os.path.exists(store_root):
 		os.makedirs(store_root)
-	num = 1000
+	num = 800
 	split_dir(img_root, store_root, num)
 
 
